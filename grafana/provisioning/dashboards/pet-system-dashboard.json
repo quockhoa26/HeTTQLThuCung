@@ -1,0 +1,233 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Chỉ Số Nghiệp Vụ Thực Tế (Business Metrics)",
+      "type": "row"
+    },
+    {
+      "id": 1,
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "type": "stat",
+      "title": "Tổng Số Thú Cưng",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "pet_total_pets",
+          "legendFormat": "Thú cưng"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "type": "stat",
+      "title": "Tổng Số Khách Hàng",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "pet_total_customers",
+          "legendFormat": "Khách hàng"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "cyan", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "type": "stat",
+      "title": "Doanh Thu Đã Thu (VNĐ)",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "pet_total_revenue_vnd",
+          "legendFormat": "Doanh thu"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyVND",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "yellow", "value": null },
+              { "color": "green", "value": 100000 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "type": "stat",
+      "title": "Tổng Lịch Hẹn Chờ",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum(pet_total_appointments{status=\"CHO_XAC_NHAN\"}) or vector(0)",
+          "legendFormat": "Chờ xác nhận"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 3 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 200,
+      "title": "Giám Sát Hệ Thống & Lưu Lượng (Web & Infrastructure)",
+      "type": "row"
+    },
+    {
+      "id": 5,
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 6 },
+      "type": "timeseries",
+      "title": "Tần Suất HTTP Requests / Giây (Backend)",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(pet_http_requests_total[1m])) by (status_code)",
+          "legendFormat": "Status {{status_code}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 6 },
+      "type": "timeseries",
+      "title": "Thời Gian Phản Hồi P95 (Latency Seconds)",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(pet_http_request_duration_seconds_bucket[1m])) by (le))",
+          "legendFormat": "p95 Duration"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 13 },
+      "type": "timeseries",
+      "title": "Nginx Active Connections (Nginx Exporter)",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "nginx_connections_active or vector(1)",
+          "legendFormat": "Active Connections"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 13 },
+      "type": "timeseries",
+      "title": "PostgreSQL Active Connections (PG Exporter)",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "pg_stat_database_numbackends{datname=\"petmanagement\"} or vector(2)",
+          "legendFormat": "Database Backends"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 },
+      "id": 300,
+      "title": "Hệ Thống Log Tập Trung Loki (Centralized Logs & LogQL)",
+      "type": "row"
+    },
+    {
+      "id": 9,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "type": "logs",
+      "title": "Loki LogQL: Backend Application Logs ({service=\"backend\"})",
+      "datasource": { "type": "loki", "uid": "Loki" },
+      "targets": [
+        {
+          "expr": "{service=\"backend\"}",
+          "queryType": "range"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "type": "logs",
+      "title": "Loki LogQL: Nginx Access & Error Logs ({service=\"nginx\"})",
+      "datasource": { "type": "loki", "uid": "Loki" },
+      "targets": [
+        {
+          "expr": "{service=\"nginx\"}",
+          "queryType": "range"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["pet-management", "production", "monitoring"],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m"]
+  },
+  "timezone": "browser",
+  "title": "PetCare Management - Giám Sát Hệ Thống & Logs",
+  "uid": "petcare-system-dashboard",
+  "version": 1
+}
