@@ -97,6 +97,7 @@ HeThongQuanLyThuCung/
 | 9 | **PostgreSQL Exporter** | `pet-postgres-exporter`| Nội bộ (9187) | Cung cấp metrics Database cho Prometheus |
 | 10 | **Nginx Exporter** | `pet-nginx-exporter` | Nội bộ (9113) | Cung cấp metrics Nginx connection cho Prometheus |
 | 11 | **Promtail Log Shipper** | `pet-promtail` | Nội bộ (9080) | Thu thập log container và đẩy về Loki |
+| 12 | **cAdvisor Container Metrics** | `pet-cadvisor` | Nội bộ (8080) | Thu thập CPU, Memory, Network của các container cho Prometheus |
 
 ---
 
@@ -114,8 +115,8 @@ Hệ thống tích hợp sẵn nút bấm **Đăng nhập 1-chạm** trên giao 
   - Quyền hạn: Tiếp nhận thú cưng, xem danh sách, cập nhật tiến độ lịch hẹn, lập hóa đơn thanh toán.
 
 ### 4.2. Bảng điều khiển Grafana (`http://localhost:3001`)
-- Tên đăng nhập: `admin`
-- Mật khẩu: `Admin@123`
+- Tên đăng nhập: `admin` (hoặc giá trị biến `GF_SECURITY_ADMIN_USER` trong file `.env`)
+- Mật khẩu: Được cấu hình qua biến `GF_SECURITY_ADMIN_PASSWORD` trong file `.env` (tham khảo mẫu tại `.env.example`)
 - Bảng điều khiển đã nạp sẵn: **PetCare Management - Giám Sát Hệ Thống & Logs**
 
 ### 4.3. Quản trị Cơ sở dữ liệu pgAdmin 4 (`http://localhost:5050`)
@@ -221,6 +222,28 @@ npm test
   ```powershell
   cd frontend; npm run build
   ```
+
+### 7.3. Kiểm tra Giám Sát Prometheus & Grafana Dashboard
+1. **Kiểm tra trạng thái Prometheus Targets**:
+   - Truy cập: `http://localhost:9090/targets`
+   - Đảm bảo tất cả 5 targets đều hiển thị `State: UP`:
+     - `prometheus`: `localhost:9090` (Prometheus server)
+     - `backend`: `backend:5000/metrics` (Node.js & Business Metrics)
+     - `nginx`: `nginx_exporter:9113` (Web server connections)
+     - `postgres`: `postgres_exporter:9187` (PostgreSQL Database metrics)
+     - `cadvisor`: `cadvisor:8080` (Container CPU/RAM/Disk metrics)
+2. **Kiểm tra truy vấn PromQL mẫu trên Prometheus**:
+   - `sum(rate(pet_http_requests_total[1m])) by (status_code)`: Tần suất request HTTP
+   - `histogram_quantile(0.95, sum(rate(pet_http_request_duration_seconds_bucket[1m])) by (le))`: Độ trễ P95
+   - `pet_total_pets`: Số lượng thú cưng (dữ liệu thật từ database qua gauge refresh)
+   - `pet_total_revenue_vnd`: Tổng doanh thu đã thanh toán
+   - `sum(rate(container_cpu_usage_seconds_total{name=~"pet-.*"}[1m])) by (name) * 100`: % CPU Container
+3. **Kiểm tra Dashboard Grafana**:
+   - Truy cập: `http://localhost:3001`
+   - Đăng nhập: Tài khoản admin với mật khẩu `GF_SECURITY_ADMIN_PASSWORD` từ file `.env`
+   - Mở Dashboard: **PetCare Management - Giám Sát Hệ Thống & Logs**
+   - Xác nhận các panels: Business Metrics, Web & Infrastructure Metrics, cAdvisor Container Resources hiển thị biểu đồ trực quan thời gian thực.
+
 
 ---
 

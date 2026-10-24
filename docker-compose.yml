@@ -208,8 +208,8 @@ services:
     ports:
       - "${GRAFANA_PORT:-3001}:3000"
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: Admin@123
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: 'false'
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
@@ -252,3 +252,20 @@ services:
       - monitor-net
     depends_on:
       - loki
+
+  # ----------------------------------------------------------------------------
+  # 12. cAdvisor (Container Resource Metrics for Prometheus)
+  # ----------------------------------------------------------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: pet-cadvisor
+    restart: unless-stopped
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - monitor-net
+

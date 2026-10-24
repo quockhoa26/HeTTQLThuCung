@@ -20,6 +20,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import auditRoutes from './routes/auditRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import { updateBusinessMetrics } from './controllers/dashboardController.js';
 
 const app = express();
 
@@ -73,6 +74,7 @@ app.get('/api/health', async (req: Request, res: Response) => {
 // Prometheus metrics endpoint
 app.get('/metrics', async (req: Request, res: Response) => {
   try {
+    await updateBusinessMetrics();
     res.set('Content-Type', register.contentType);
     res.end(await register.metrics());
   } catch (err) {

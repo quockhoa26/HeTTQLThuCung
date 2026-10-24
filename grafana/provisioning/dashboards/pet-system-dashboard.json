@@ -182,15 +182,51 @@
       ]
     },
     {
+      "id": 11,
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 19 },
+      "type": "timeseries",
+      "title": "Mức Sử Dụng CPU Container (cAdvisor)",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{name=~\"pet-.*\"}[1m])) by (name) * 100",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 19 },
+      "type": "timeseries",
+      "title": "Mức Sử Dụng RAM Container (cAdvisor)",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum(container_memory_working_set_bytes{name=~\"pet-.*\"}) by (name) / 1024 / 1024",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decmbytes"
+        }
+      }
+    },
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
       "id": 300,
       "title": "Hệ Thống Log Tập Trung Loki (Centralized Logs & LogQL)",
       "type": "row"
     },
     {
       "id": 9,
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
       "type": "logs",
       "title": "Loki LogQL: Backend Application Logs ({service=\"backend\"})",
       "datasource": { "type": "loki", "uid": "Loki" },
@@ -203,7 +239,7 @@
     },
     {
       "id": 10,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
       "type": "logs",
       "title": "Loki LogQL: Nginx Access & Error Logs ({service=\"nginx\"})",
       "datasource": { "type": "loki", "uid": "Loki" },

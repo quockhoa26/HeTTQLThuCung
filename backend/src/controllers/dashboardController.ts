@@ -111,3 +111,33 @@ export async function getDashboardStats(req: Request, res: Response, next: NextF
     next(error);
   }
 }
+
+/**
+ * Cập nhật định kỳ các chỉ số nghiệp vụ từ cơ sở dữ liệu cho Prometheus metrics endpoint
+ */
+export async function updateBusinessMetrics(): Promise<void> {
+  try {
+    const petsRes = await query('SELECT COUNT(*) FROM pets');
+    totalPetsGauge.set(parseInt(petsRes.rows[0].count, 10));
+
+    const customersRes = await query('SELECT COUNT(*) FROM customers');
+    totalCustomersGauge.set(parseInt(customersRes.rows[0].count, 10));
+
+    const revenueRes = await query(
+      `SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE status = 'DA_THANH_TOAN'`
+    );
+    totalRevenueGauge.set(parseFloat(revenueRes.rows[0].total));
+
+    const aptStatusRes = await query(`
+      SELECT status, COUNT(*) as count 
+      FROM appointments 
+      GROUP BY status
+    `);
+    for (const row of aptStatusRes.rows) {
+      totalAppointmentsGauge.set({ status: row.status }, parseInt(row.count, 10));
+    }
+  } catch {
+    // Không làm gián đoạn metrics endpoint nếu cơ sở dữ liệu chưa sẵn sàng
+  }
+}
+
