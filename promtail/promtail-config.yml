@@ -9,7 +9,7 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  # 1. Scrape Backend Application Logs
+  # 1. Scrape Backend Application Logs (Winston JSON format)
   - job_name: backend-logs
     static_configs:
       - targets:
@@ -25,19 +25,25 @@ scrape_configs:
             message: message
             timestamp: timestamp
             service: service
+            method: method
+            path: path
+            statusCode: statusCode
       - labels:
           level:
           service:
+          method:
+          statusCode:
 
-  # 2. Scrape Nginx Access and Error Logs
-  - job_name: nginx-logs
+  # 2. Scrape Nginx Access Logs (Structured JSON analytics format)
+  - job_name: nginx-access-logs
     static_configs:
       - targets:
           - localhost
         labels:
           job: nginx
           service: nginx
-          __path__: /var/log/nginx/app_*.log
+          log_type: access
+          __path__: /var/log/nginx/app_access.log
     pipeline_stages:
       - json:
           expressions:
@@ -45,6 +51,23 @@ scrape_configs:
             request_method: request_method
             request_uri: request_uri
             remote_addr: remote_addr
+            request_time: request_time
       - labels:
           status:
           request_method:
+
+  # 3. Scrape Nginx Error Logs (Standard Nginx text format)
+  - job_name: nginx-error-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nginx
+          service: nginx
+          log_type: error
+          __path__: /var/log/nginx/app_error.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<level>\w+)\] (?P<pid>\d+)#(?P<tid>\d+): (?P<message>.*)'
+      - labels:
+          level:

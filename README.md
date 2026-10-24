@@ -247,29 +247,63 @@ npm test
 
 ---
 
-## 8. Hướng Dẫn Truy Vấn Log Bằng LogQL (Loki + Promtail)
+## 8. Hướng Dẫn Thu Thập & Truy Vấn Log Bằng LogQL (Loki + Promtail)
 
-Truy cập Grafana tại `http://localhost:3001` -> Menu **Explore** -> Chọn nguồn dữ liệu **Loki**.
+### 8.1. Quy trình Thu thập và Luân chuyển Log
+- **Backend Application Logs**: Thư viện Winston ghi log định dạng JSON đa cấp độ (`info`, `warn`, `error`) vào volume `app_logs` (`/app/logs/backend.log` và `/app/logs/error.log`). Promtail tự động đọc tệp, phân tích JSON và gắn nhãn nhãn (`service="backend"`, `level`, `statusCode`).
+- **Nginx Access & Error Logs**: Nginx xuất log truy cập định dạng JSON cấu trúc cao vào volume `nginx_logs` (`/var/log/nginx/app_access.log`). Promtail đọc và gắn nhãn (`service="nginx"`, `status`, `request_method`).
+- **Loki Ingestion**: Promtail chuyển log qua giao thức HTTP push endpoint `http://loki:3100/loki/api/v1/push`.
+- **Grafana Visualization**: Người quản trị truy vấn trực quan thời gian thực trên Grafana qua nguồn dữ liệu `Loki`.
 
-Dưới đây là 3 câu truy vấn LogQL tiêu chuẩn theo yêu cầu đề bài:
+### 8.2. Các Bước Tạo Hoạt Động Để Sinh Log (Traffic Generation)
+Trước khi truy vấn trên Grafana, tạo các hoạt động thực tế để hệ thống ghi log:
+1. **Tạo log truy cập và nghiệp vụ thông thường (HTTP 200)**:
+   ```powershell
+   curl http://localhost:8080/api/health
+   curl http://localhost:8080/api/services
+   curl http://localhost:8080/api/pets
+   ```
+2. **Tạo log cảnh báo/lỗi (HTTP 401, 404 để kiểm thử bộ lọc lỗi)**:
+   ```powershell
+   # Gọi API quản trị không kèm Token (HTTP 401 Unauthorized)
+   curl -i http://localhost:8080/api/users
+   # Gọi đường dẫn không tồn tại (HTTP 404 Not Found)
+   curl -i http://localhost:8080/api/non-existing-endpoint
+   ```
 
-1. **Truy vấn log dịch vụ Backend**:
+### 8.3. Danh Sách 5 Truy Vấn LogQL Tiêu Chuẩn Cho Đề Thi
+Mở Grafana tại `http://localhost:3001` -> Vào mục **Explore** (biểu tượng La bàn) -> Chọn Datasource **Loki**:
+
+1. **Truy vấn 1: Giám sát toàn bộ log hệ thống Backend**:
    ```logql
    {service="backend"}
    ```
-   *Mô tả: Hiển thị toàn bộ nhật ký ứng dụng backend theo định dạng JSON có timestamp và thông tin request.*
+   - *Mục đích*: Xem toàn bộ luồng log ứng dụng Backend theo thời gian thực (Request duration, database status, transaction).
 
-2. **Truy vấn request và cảnh báo lỗi HTTP từ Nginx**:
+2. **Truy vấn 2: Lọc log lỗi và cảnh báo nghiêm trọng phía Backend**:
+   ```logql
+   {service="backend"} | json | level =~ "error|warn"
+   ```
+   - *Mục đích*: Tự động trích xuất cấu trúc JSON từ Winston log, lọc riêng các bản ghi có mức độ `error` hoặc `warn` để điều tra ngoại lệ hoặc sự cố kết nối.
+
+3. **Truy vấn 3: Phân tích Nginx Access Logs phát hiện lỗi HTTP 4xx và 5xx**:
    ```logql
    {service="nginx"} | json | status >= 400
    ```
-   *Mô tả: Lọc tất cả các yêu cầu HTTP trả về mã trạng thái lỗi 4xx hoặc 5xx từ reverse proxy.*
+   - *Mục đích*: Lọc tất cả các request thất bại từ reverse proxy (Client Error 4xx như 401, 403, 404 hoặc Gateway Error 5xx như 502, 504).
 
-3. **Truy vấn lỗi nghiêm trọng của dịch vụ cụ thể (Backend Errors)**:
+4. **Truy vấn 4: Thống kê tần suất HTTP request theo phương thức (Metric Query)**:
    ```logql
-   {service="backend"} |= "level=error"
+   sum by (request_method) (rate({service="nginx"} | json [1m]))
    ```
-   *Mô tả: Lọc các dòng log ghi nhận lỗi vận hành hoặc ngoại lệ hệ thống trong container backend.*
+   - *Mục đích*: Chuyển đổi dữ liệu log thành đồ thị lưu lượng (Log-to-Metric), hiển thị số lượng request mỗi giây phân loại theo `GET`, `POST`, `PUT`, `DELETE`.
+
+5. **Truy vấn 5: Điều tra các hoạt động bảo mật, thanh toán hoặc đặt lịch**:
+   ```logql
+   {service="backend"} |= "HTTP Request" | json | path =~ "/api/auth/.*|/api/invoices/.*|/api/appointments/.*"
+   ```
+   - *Mục đích*: Truy vết hành vi người dùng đối với các endpoint trọng yếu (Đăng nhập, Quản lý hóa đơn, Lập lịch khám).
+
 
 ---
 
