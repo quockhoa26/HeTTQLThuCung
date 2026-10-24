@@ -86,7 +86,7 @@ HeThongQuanLyThuCung/
 
 | STT | Dịch Vụ | Container Name | Cổng Host | Địa chỉ truy cập / Chức năng |
 |---|---|---|---|---|
-| 1 | **Cổng ứng dụng chính (Nginx)** | `pet-nginx` | **8080** | **http://localhost:8080** (Giao diện Web Spa & API) |
+| 1 | **Cổng ứng dụng chính (Nginx)** | `pet-nginx` | **8080** / **8443** | **http://localhost:8080** hoặc **https://localhost:8443** (Reverse Proxy, SSL tự ký, Security Headers) |
 | 2 | **API Backend (Health Check)** | `pet-backend` | Nội bộ (5000) | **http://localhost:8080/api/health** |
 | 3 | **Prometheus Metrics Endpoint** | `pet-backend` | Nội bộ (5000) | **http://localhost:8080/metrics** |
 | 4 | **Bảng điều khiển Grafana** | `pet-grafana` | **3001** | **http://localhost:3001** (Dashboard giám sát & LogQL) |
@@ -142,12 +142,17 @@ Hệ thống tích hợp sẵn nút bấm **Đăng nhập 1-chạm** trên giao 
    - Database PostgreSQL **hoàn toàn không mở cổng ra Host**, ngăn chặn truy cập trái phép từ bên ngoài máy chủ.
 3. **Mật khẩu mạnh & Băm mật khẩu một chiều**:
    - Mật khẩu người dùng được băm bằng thuật toán `bcrypt` với 10 vòng sinh muối (salt rounds). Không bao giờ lưu mật khẩu dạng văn bản thô.
-4. **Nginx Security Headers**:
+4. **Nginx Reverse Proxy, Security Headers & HTTPS Tự Ký**:
    - `X-Frame-Options: SAMEORIGIN` (Chống Clickjacking)
    - `X-Content-Type-Options: nosniff` (Chống MIME-type sniffing)
    - `X-XSS-Protection: 1; mode=block` (Chống phản xạ XSS)
    - `Referrer-Policy: strict-origin-when-cross-origin`
+   - `Content-Security-Policy`: Kiểm soát nguồn tài nguyên hợp lệ
+   - `Strict-Transport-Security (HSTS)`: Bắt buộc HTTPS khi truy cập cổng SSL (443/8443)
    - `server_tokens off;` (Ẩn hoàn toàn phiên bản Nginx)
+   - **Rate Limiting**: Giới hạn tần suất 30 req/s cho `/api/` để chống tấn công DoS/Brute-force
+   - **Bảo vệ endpoint nội bộ**: Khóa endpoint `/stub_status` và `/metrics` chỉ cho phép mạng Docker nội bộ (`127.0.0.1`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), từ chối toàn bộ IP bên ngoài (`deny all;`)
+   - **Trang lỗi 50x tùy biến**: Hiển thị giao diện thông báo bằng tiếng Việt chuyên nghiệp khi backend đang khởi động
 5. **Masking dữ liệu nhạy cảm trong Log**:
    - Module Winston Logger tự động lọc và thay thế chuỗi chứa `password`, `token`, `secret`, `authorization` bằng `***REDACTED***` trước khi xuất ra log.
 6. **Bảo toàn toàn vẹn dữ liệu (Transactions & Validation)**:
